@@ -79,7 +79,7 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        // --- NEW Keyframes for Snake Game ---
+        // --- Keyframes from other games ---
         'gradient-shift': {
           '0%, 100%': { 'background-position': '0% 50%' },
           '50%': { 'background-position': '100% 50%' },
@@ -102,18 +102,31 @@ module.exports = {
             '50%': { transform: 'scale(1.05)', opacity: '1' },
             '70%': { transform: 'scale(0.9)', opacity: '1' },
             '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        // --- NEW Keyframes for Flappy Bird ---
+        'scroll': {
+            from: { backgroundPosition: '0 0' },
+            to: { backgroundPosition: '-1000px 0' },
+        },
+        'flap': {
+            '0%, 100%': { transform: 'rotate(-20deg)' },
+            '50%': { transform: 'rotate(20deg)' },
         }
       },
       animation: {
         // --- Existing Animations ---
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        // --- NEW Animations for Snake Game ---
+        // --- Animations from other games ---
         'gradient-shift': 'gradient-shift 4s ease infinite',
         'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'pop-in': 'pop-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards',
         'bounce-in': 'bounce-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+        // --- NEW Animations for Flappy Bird ---
+        'scroll-fast': 'scroll 10s linear infinite',
+        'scroll-slow': 'scroll 40s linear infinite',
+        'flap': 'flap 0.3s ease-in-out',
       },
     },
   },
