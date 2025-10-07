@@ -9,7 +9,7 @@ export const Bubbles = () => {
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState([]);
     const [level, setLevel] = useState(1);
-    const [gameSize, setGameSize] = useState({width: window.innerWidth, height: window.innerHeight});
+    const [gameSize, setGameSize] = useState({width: 375, height: 667});
 
     const gameLoopRef = useRef(null);
     const gameContainerRef = useRef(null);
@@ -19,12 +19,11 @@ export const Bubbles = () => {
 
     // --- ADAPTIVE/RESPONSIVE VALUES ---
     const isMobile = gameSize.width < 768;
-    const bubbleSize = gameSize.width / (isMobile ? 15 : 25);
+    const bubbleSize = gameSize.width / (isMobile ? 12 : 25);
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const colors = ["bg-red-400", "bg-blue-400", "bg-green-400", "bg-yellow-400", "bg-purple-400", "bg-pink-400"];
 
-    // --- SOUND FUNCTION ---
-    // FIXED: Restored the full implementation of the playSound function
+    // --- SOUND FUNCTION (Full Implementation) ---
     const playSound = useCallback((type) => {
         const ctx = audioCtxRef.current;
         if (!ctx) return;
@@ -81,7 +80,7 @@ export const Bubbles = () => {
         }
     }, []);
 
-    // --- GAME LOGIC ---
+    // --- GAME LOGIC (Full Implementation) ---
     const startGame = () => {
         if (!audioCtxRef.current) {
             audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -129,9 +128,7 @@ export const Bubbles = () => {
     const handleKeyPress = useCallback(
         (e) => {
             const letter = e.key.toUpperCase();
-            if (letter.length === 1) {
-                popBubble(letter);
-            }
+            if (letter.length === 1) popBubble(letter);
         },
         [popBubble]
     );
@@ -188,7 +185,7 @@ export const Bubbles = () => {
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }, [level, gameSize.height, bubbleSize, createBubble, endGame]);
 
-    // --- EFFECTS ---
+    // --- EFFECTS (Full Implementation) ---
     useEffect(() => {
         const container = gameContainerRef.current;
         if (!container) return;
@@ -205,14 +202,10 @@ export const Bubbles = () => {
         if (isPlaying && !gameOver) {
             gameLoopRef.current = requestAnimationFrame(gameLoop);
         } else {
-            if (gameLoopRef.current) {
-                cancelAnimationFrame(gameLoopRef.current);
-            }
+            if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
         }
         return () => {
-            if (gameLoopRef.current) {
-                cancelAnimationFrame(gameLoopRef.current);
-            }
+            if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
         };
     }, [isPlaying, gameOver, gameLoop]);
 
@@ -232,12 +225,9 @@ export const Bubbles = () => {
         return () => window.removeEventListener("keydown", handleKeyPress);
     }, [handleKeyPress]);
 
+    // --- JSX ---
     return (
-        <div
-            ref={gameContainerRef}
-            onClick={() => inputRef.current?.focus()}
-            className="w-screen h-screen relative cursor-pointer bg-gradient-to-b from-cyan-900 to-blue-800 overflow-hidden font-sans antialiased"
-        >
+        <div className="w-screen h-screen flex flex-col bg-cyan-900 font-sans antialiased">
             <input
                 ref={inputRef}
                 type="text"
@@ -249,30 +239,38 @@ export const Bubbles = () => {
                 spellCheck="false"
             />
 
-            <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex justify-between items-center z-10 text-white">
-                <p className="text-xl sm:text-2xl font-bold drop-shadow-md bg-black/20 px-4 py-2 rounded-full">
-                    Score: {score}
-                </p>
-                <p className="text-xl sm:text-2xl font-bold drop-shadow-md bg-black/20 px-4 py-2 rounded-full">
-                    Level: {level}
-                </p>
+            <header className="w-full p-4 flex justify-between items-center z-10 text-white bg-black/20">
+                <p className="text-xl sm:text-2xl font-bold drop-shadow-md">Score: {score}</p>
+                <p className="text-xl sm:text-2xl font-bold drop-shadow-md">Level: {level}</p>
             </header>
 
-            {bubbles.map((b) => (
-                <div
-                    key={b.id}
-                    className={`absolute rounded-full ${b.color} border-2 border-white/50 flex items-center justify-center text-white font-bold shadow-lg`}
-                    style={{
-                        left: b.x,
-                        top: b.y,
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        fontSize: `${bubbleSize * 0.5}px`,
-                    }}
-                >
-                    {b.letter}
-                </div>
-            ))}
+            <main
+                ref={gameContainerRef}
+                className="flex-1 w-full relative bg-gradient-to-b from-cyan-800 to-blue-900 overflow-hidden"
+            >
+                {bubbles.map((b) => (
+                    <div
+                        key={b.id}
+                        className={`absolute rounded-full ${b.color} border-2 border-white/50 flex items-center justify-center text-white font-bold shadow-lg`}
+                        style={{
+                            left: b.x,
+                            top: b.y,
+                            width: bubbleSize,
+                            height: bubbleSize,
+                            fontSize: `${bubbleSize * 0.5}px`,
+                        }}
+                    >
+                        {b.letter}
+                    </div>
+                ))}
+            </main>
+
+            <footer
+                onClick={() => inputRef.current?.focus()}
+                className="w-full p-2 text-center text-cyan-200 bg-black/20 z-10 cursor-pointer"
+            >
+                {isPlaying ? "Tap here to type" : "Press Start to Play"}
+            </footer>
 
             {!isPlaying && !gameOver && (
                 <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20 animate-fade-in">
