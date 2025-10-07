@@ -1,0 +1,225 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Comfortaa:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222 30% 15%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 222 30% 15%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 30% 15%;
+
+        --primary: 220 80% 50%;
+        --primary-foreground: 210 40% 98%;
+
+        --secondary: 210 60% 95%;
+        --secondary-foreground: 222 30% 20%;
+
+        --muted: 210 60% 95%;
+        --muted-foreground: 215 20% 40%;
+
+        --accent: 340 80% 70%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 70% 60%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 210 40% 90%;
+        --input: 210 40% 90%;
+        --ring: 220 80% 50%;
+
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 230 25% 10%;
+        --foreground: 210 40% 98%;
+
+        --card: 222 25% 15%;
+        --card-foreground: 0 0% 100%;
+
+        --popover: 230 25% 10%;
+        --popover-foreground: 210 40% 98%;
+
+        --primary: 220 80% 60%;
+        --primary-foreground: 230 25% 10%;
+
+        --secondary: 230 15% 20%;
+        --secondary-foreground: 210 40% 98%;
+
+        --muted: 230 15% 20%;
+        --muted-foreground: 215 20% 65%;
+
+        --accent: 300 60% 55%;
+        --accent-foreground: 230 25% 10%;
+
+        --destructive: 0 62% 40%;
+        --destructive-foreground: 210 40% 98%;
+
+        --border: 220 15% 25%;
+        --input: 220 15% 25%;
+        --ring: 220 80% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-['Poppins',sans-serif];
+        min-height: 100vh;
+    }
+
+    body:not(.dark) {
+        background: linear-gradient(
+            135deg,
+            hsl(0 0% 100%) 0%,
+            hsl(210 60% 98%) 25%,
+            hsl(220 80% 95%) 50%,
+            hsl(210 60% 98%) 75%,
+            hsl(0 0% 100%) 100%
+        );
+    }
+
+    .dark body {
+        background: linear-gradient(
+            135deg,
+            hsl(230 25% 10%) 0%,
+            hsl(240 20% 15%) 25%,
+            hsl(220 30% 18%) 50%,
+            hsl(240 20% 15%) 75%,
+            hsl(230 25% 10%) 100%
+        );
+    }
+}
+
+@layer utilities {
+    .neon-glow {
+        box-shadow: 0 0 20px hsl(var(--primary) / 0.5), 0 0 40px hsl(var(--primary) / 0.3),
+            0 0 60px hsl(var(--primary) / 0.1);
+        animation: pulse-glow 2s ease-in-out infinite alternate;
+    }
+
+    .floating-voice {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 50;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    @keyframes pulse-glow {
+        0% {
+            box-shadow: 0 0 20px hsl(var(--primary) / 0.5), 0 0 40px hsl(var(--primary) / 0.3);
+        }
+        100% {
+            box-shadow: 0 0 30px hsl(var(--primary) / 0.8), 0 0 60px hsl(var(--primary) / 0.5),
+                0 0 80px hsl(var(--primary) / 0.2);
+        }
+    }
+
+    .game-card-hover {
+        transition: all 0.3s ease;
+    }
+
+    body:not(.dark) .game-card-hover {
+        background: linear-gradient(
+            135deg,
+            hsl(210 60% 98%) 0%,
+            hsl(220 80% 95%) 30%,
+            hsl(200 100% 94%) 70%,
+            hsl(220 80% 95%) 100%
+        );
+        border: 1px solid hsl(220 40% 85%);
+        box-shadow: 0 2px 8px hsl(220 50% 90% / 0.5);
+    }
+
+    .dark .game-card-hover {
+        background: linear-gradient(
+            135deg,
+            hsl(220 20% 8%) 0%,
+            hsl(230 30% 10%) 30%,
+            hsl(215 40% 12%) 70%,
+            hsl(225 30% 9%) 100%
+        );
+        border: 1px solid hsl(220 20% 20%);
+        box-shadow: 0 2px 8px hsl(220 70% 5% / 0.8);
+    }
+
+    body:not(.dark) .game-card-hover:hover {
+        transform: translateY(-8px);
+        background: linear-gradient(
+            135deg,
+            hsl(220 100% 96%) 0%,
+            hsl(210 100% 94%) 30%,
+            hsl(200 100% 92%) 70%,
+            hsl(210 100% 94%) 100%
+        );
+        box-shadow: 0 20px 40px hsl(220 50% 80% / 0.3), 0 0 30px hsl(220 60% 70% / 0.2);
+        border-color: hsl(220 50% 75%);
+    }
+
+    .dark .game-card-hover:hover {
+        transform: translateY(-8px);
+        background: linear-gradient(
+            135deg,
+            hsl(220 70% 12%) 0%,
+            hsl(230 60% 15%) 30%,
+            hsl(215 80% 18%) 70%,
+            hsl(225 65% 14%) 100%
+        );
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px hsl(220 70% 40% / 0.3);
+        border-color: hsl(220 50% 30%);
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .gradient-bg {
+        background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.1));
+    }
+
+    .light-gradient {
+        background: linear-gradient(
+            135deg,
+            hsl(0 0% 100%) 0%,
+            hsl(210 60% 98%) 25%,
+            hsl(220 80% 95%) 50%,
+            hsl(210 60% 98%) 75%,
+            hsl(0 0% 100%) 100%
+        );
+    }
+
+    .dark .light-gradient {
+        background: linear-gradient(
+            135deg,
+            hsl(230 25% 10%) 0%,
+            hsl(240 20% 15%) 25%,
+            hsl(220 30% 18%) 50%,
+            hsl(240 20% 15%) 75%,
+            hsl(230 25% 10%) 100%
+        );
+    }
+}
