@@ -17,12 +17,14 @@ export const Bubbles = () => {
     const audioCtxRef = useRef(null);
     const inputRef = useRef(null);
 
-    // --- CONSTANTS & DERIVED VALUES ---
-    const bubbleSize = gameSize.width / 25;
+    // --- ADAPTIVE/RESPONSIVE VALUES ---
+    const isMobile = gameSize.width < 768;
+    const bubbleSize = gameSize.width / (isMobile ? 15 : 25);
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const colors = ["bg-red-400", "bg-blue-400", "bg-green-400", "bg-yellow-400", "bg-purple-400", "bg-pink-400"];
 
     // --- SOUND FUNCTION ---
+    // FIXED: Restored the full implementation of the playSound function
     const playSound = useCallback((type) => {
         const ctx = audioCtxRef.current;
         if (!ctx) return;
@@ -88,9 +90,6 @@ export const Bubbles = () => {
             audioCtxRef.current.resume();
         }
         playSound("start");
-
-        // FIXED: startGame's only job is to set the state.
-        // The useEffect will handle the side effect of starting the loop.
         setIsPlaying(true);
         setGameOver(false);
         setScore(0);
@@ -100,15 +99,59 @@ export const Bubbles = () => {
         inputRef.current?.focus();
     };
 
+    const popBubble = useCallback(
+        (letter) => {
+            if (!isPlaying || gameOver || !letters.includes(letter)) return;
+
+            setBubbles((prev) => {
+                let lowestBubbleIndex = -1;
+                let lowestY = -1;
+                prev.forEach((bubble, index) => {
+                    if (bubble.letter === letter && bubble.y > lowestY) {
+                        lowestY = bubble.y;
+                        lowestBubbleIndex = index;
+                    }
+                });
+
+                if (lowestBubbleIndex !== -1) {
+                    playSound("pop");
+                    const updated = [...prev];
+                    updated.splice(lowestBubbleIndex, 1);
+                    setScore((s) => s + 10);
+                    return updated;
+                }
+                return prev;
+            });
+        },
+        [isPlaying, gameOver, playSound]
+    );
+
+    const handleKeyPress = useCallback(
+        (e) => {
+            const letter = e.key.toUpperCase();
+            if (letter.length === 1) {
+                popBubble(letter);
+            }
+        },
+        [popBubble]
+    );
+
+    const handleMobileInput = useCallback(
+        (e) => {
+            const typedValue = e.target.value;
+            if (!typedValue) return;
+            const letter = typedValue.slice(-1).toUpperCase();
+            popBubble(letter);
+            e.target.value = "";
+        },
+        [popBubble]
+    );
+
     const endGame = useCallback(() => {
         if (gameOver) return;
-        playSound("gameOver");
-
-        // FIXED: endGame's only job is to set the state.
-        // The useEffect will handle the side effect of stopping the loop.
         setIsPlaying(false);
         setGameOver(true);
-
+        playSound("gameOver");
         toast({
             title: "Game Over!",
             description: `A bubble reached the bottom! Final Score: ${score}`,
@@ -142,30 +185,8 @@ export const Bubbles = () => {
             }
             return filtered;
         });
-
         gameLoopRef.current = requestAnimationFrame(gameLoop);
     }, [level, gameSize.height, bubbleSize, createBubble, endGame]);
-
-    const handleKeyPress = useCallback(
-        (e) => {
-            if (!isPlaying || gameOver) return;
-            const letter = e.key.toUpperCase();
-            if (letter.length !== 1 || !letters.includes(letter)) return;
-
-            setBubbles((prev) => {
-                const index = prev.findIndex((b) => b.letter === letter);
-                if (index !== -1) {
-                    playSound("pop");
-                    const updated = [...prev];
-                    updated.splice(index, 1);
-                    setScore((s) => s + 10);
-                    return updated;
-                }
-                return prev;
-            });
-        },
-        [isPlaying, gameOver, playSound]
-    );
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -180,8 +201,6 @@ export const Bubbles = () => {
         return () => resizeObserver.disconnect();
     }, []);
 
-    // FIXED: Reinstated the useEffect to manage the game loop's lifecycle.
-    // This correctly handles starting and stopping the loop based on state changes.
     useEffect(() => {
         if (isPlaying && !gameOver) {
             gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -222,7 +241,7 @@ export const Bubbles = () => {
             <input
                 ref={inputRef}
                 type="text"
-                onKeyDown={handleKeyPress}
+                onInput={handleMobileInput}
                 style={{position: "absolute", top: "-9999px", left: "-9999px", opacity: 0, pointerEvents: "none"}}
                 autoComplete="off"
                 autoCorrect="off"
@@ -269,7 +288,6 @@ export const Bubbles = () => {
                     </Button>
                 </div>
             )}
-
             {gameOver && (
                 <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-20 animate-fade-in">
                     <h2 className="text-4xl sm:text-6xl font-bold text-white mb-2">Game Over!</h2>
