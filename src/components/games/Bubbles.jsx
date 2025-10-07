@@ -1,5 +1,4 @@
 import React, {useState, useEffect, useRef, useCallback} from "react";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {toast} from "@/hooks/use-toast";
 
@@ -10,21 +9,20 @@ export const Bubbles = () => {
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState([]);
     const [level, setLevel] = useState(1);
-    const [gameSize, setGameSize] = useState({width: 600, height: 400});
+    const [gameSize, setGameSize] = useState({width: window.innerWidth, height: window.innerHeight});
 
     const gameLoopRef = useRef(null);
     const gameContainerRef = useRef(null);
     const bubbleIdRef = useRef(0);
     const audioCtxRef = useRef(null);
-    // NEW: Ref for our hidden input field
     const inputRef = useRef(null);
 
     // --- CONSTANTS & DERIVED VALUES ---
-    const bubbleSize = gameSize.width / 12;
+    const bubbleSize = gameSize.width / 25;
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const colors = ["bg-red-400", "bg-blue-400", "bg-green-400", "bg-yellow-400", "bg-purple-400", "bg-pink-400"];
 
-    // --- SOUND FUNCTION (No changes) ---
+    // --- SOUND FUNCTION ---
     const playSound = useCallback((type) => {
         const ctx = audioCtxRef.current;
         if (!ctx) return;
@@ -90,23 +88,69 @@ export const Bubbles = () => {
             audioCtxRef.current.resume();
         }
         playSound("start");
+
+        // FIXED: startGame's only job is to set the state.
+        // The useEffect will handle the side effect of starting the loop.
         setIsPlaying(true);
         setGameOver(false);
         setScore(0);
         setLevel(1);
         setBubbles([]);
         bubbleIdRef.current = 0;
-
-        // MODIFIED: Focus the hidden input to bring up the mobile keyboard
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
+        inputRef.current?.focus();
     };
 
-    // NEW: Function to process a typed letter, reusable by both handlers
-    const processTypedLetter = useCallback(
-        (letter) => {
-            if (!isPlaying || gameOver || !letters.includes(letter)) return;
+    const endGame = useCallback(() => {
+        if (gameOver) return;
+        playSound("gameOver");
+
+        // FIXED: endGame's only job is to set the state.
+        // The useEffect will handle the side effect of stopping the loop.
+        setIsPlaying(false);
+        setGameOver(true);
+
+        toast({
+            title: "Game Over!",
+            description: `A bubble reached the bottom! Final Score: ${score}`,
+            variant: "destructive",
+        });
+    }, [score, gameOver, playSound]);
+
+    const createBubble = useCallback(() => {
+        const speed = gameSize.height / 800 + level * 0.05;
+        return {
+            id: bubbleIdRef.current++,
+            letter: letters[Math.floor(Math.random() * letters.length)],
+            x: Math.random() * (gameSize.width - bubbleSize),
+            y: -bubbleSize,
+            speed: speed + Math.random() * 0.2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+        };
+    }, [level, gameSize.width, gameSize.height, bubbleSize]);
+
+    const gameLoop = useCallback(() => {
+        setBubbles((prevBubbles) => {
+            const updated = prevBubbles.map((b) => ({...b, y: b.y + b.speed}));
+            if (updated.some((b) => b.y + bubbleSize >= gameSize.height)) {
+                endGame();
+                return prevBubbles;
+            }
+            const filtered = updated.filter((b) => b.y < gameSize.height);
+            const baseSpawnRate = 0.01 + level * 0.0015;
+            if (Math.random() < baseSpawnRate) {
+                filtered.push(createBubble());
+            }
+            return filtered;
+        });
+
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }, [level, gameSize.height, bubbleSize, createBubble, endGame]);
+
+    const handleKeyPress = useCallback(
+        (e) => {
+            if (!isPlaying || gameOver) return;
+            const letter = e.key.toUpperCase();
+            if (letter.length !== 1 || !letters.includes(letter)) return;
 
             setBubbles((prev) => {
                 const index = prev.findIndex((b) => b.letter === letter);
@@ -123,131 +167,122 @@ export const Bubbles = () => {
         [isPlaying, gameOver, playSound]
     );
 
-    // MODIFIED: This now handles physical keyboards
-    const handleKeyPress = useCallback(
-        (e) => {
-            const letter = e.key.toUpperCase();
-            processTypedLetter(letter);
-        },
-        [processTypedLetter]
-    );
-
-    // NEW: This function handles input from the hidden text field for mobile
-    const handleInputChange = useCallback(
-        (e) => {
-            const typedValue = e.target.value;
-            if (!typedValue) return; // Ignore empty values
-
-            const letter = typedValue.slice(-1).toUpperCase();
-            processTypedLetter(letter);
-
-            // Clear the input field immediately to be ready for the next character
-            e.target.value = "";
-        },
-        [processTypedLetter]
-    );
-
-    const endGame = useCallback(/* ...no changes... */);
-    const createBubble = useCallback(/* ...no changes... */);
-    const gameLoop = useCallback(/* ...no changes... */);
-
     // --- EFFECTS ---
-    // ... other useEffects remain the same ...
+    useEffect(() => {
+        const container = gameContainerRef.current;
+        if (!container) return;
+        const updateSize = () => {
+            setGameSize({width: container.offsetWidth, height: container.offsetHeight});
+        };
+        updateSize();
+        const resizeObserver = new ResizeObserver(updateSize);
+        resizeObserver.observe(container);
+        return () => resizeObserver.disconnect();
+    }, []);
 
-    // This effect now correctly starts and stops the loop
+    // FIXED: Reinstated the useEffect to manage the game loop's lifecycle.
+    // This correctly handles starting and stopping the loop based on state changes.
     useEffect(() => {
         if (isPlaying && !gameOver) {
             gameLoopRef.current = requestAnimationFrame(gameLoop);
         } else {
-            // On game over, blur the input to hide the keyboard
-            if (gameOver && inputRef.current) {
-                inputRef.current.blur();
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
             }
-            cancelAnimationFrame(gameLoopRef.current);
         }
-        return () => cancelAnimationFrame(gameLoopRef.current);
+        return () => {
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
+            }
+        };
     }, [isPlaying, gameOver, gameLoop]);
 
-    // Physical keyboard listener (for desktops)
+    useEffect(() => {
+        if (score > 0 && score % 100 === 0) {
+            const newLevel = Math.floor(score / 100) + 1;
+            if (newLevel > level) {
+                setLevel(newLevel);
+                playSound("levelUp");
+                toast({title: `Level Up to ${newLevel}!`, description: "Bubbles are now faster!"});
+            }
+        }
+    }, [score, level, playSound]);
+
     useEffect(() => {
         window.addEventListener("keydown", handleKeyPress);
         return () => window.removeEventListener("keydown", handleKeyPress);
     }, [handleKeyPress]);
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-rose-900 p-2 sm:p-4 font-sans antialiased">
-            <Card className="w-full max-w-4xl bg-card/70 backdrop-blur-lg shadow-2xl border border-primary/20 rounded-xl p-4 sm:p-6 transition-all duration-300">
-                <CardHeader> {/* ... no changes ... */} </CardHeader>
-                <CardContent>
-                    {/* NEW: Hidden input to capture mobile keyboard events */}
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        onChange={handleInputChange}
-                        // Styling to make it completely invisible and out of the way
-                        style={{
-                            position: "absolute",
-                            top: "-9999px",
-                            left: "-9999px",
-                            opacity: 0,
-                            pointerEvents: "none",
-                        }}
-                        // Mobile-specific attributes to prevent unwanted behavior
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                    />
+        <div
+            ref={gameContainerRef}
+            onClick={() => inputRef.current?.focus()}
+            className="w-screen h-screen relative cursor-pointer bg-gradient-to-b from-cyan-900 to-blue-800 overflow-hidden font-sans antialiased"
+        >
+            <input
+                ref={inputRef}
+                type="text"
+                onKeyDown={handleKeyPress}
+                style={{position: "absolute", top: "-9999px", left: "-9999px", opacity: 0, pointerEvents: "none"}}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+            />
 
-                    <div
-                        ref={gameContainerRef}
-                        // MODIFIED: Clicking the game area will re-focus the input
-                        onClick={() => inputRef.current?.focus()}
-                        className="relative w-full max-w-[600px] mx-auto aspect-[3/2] bg-gradient-to-b from-cyan-100 to-blue-300 dark:from-cyan-900 dark:to-blue-800 border-4 border-blue-400 rounded-lg overflow-hidden shadow-inner"
+            <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex justify-between items-center z-10 text-white">
+                <p className="text-xl sm:text-2xl font-bold drop-shadow-md bg-black/20 px-4 py-2 rounded-full">
+                    Score: {score}
+                </p>
+                <p className="text-xl sm:text-2xl font-bold drop-shadow-md bg-black/20 px-4 py-2 rounded-full">
+                    Level: {level}
+                </p>
+            </header>
+
+            {bubbles.map((b) => (
+                <div
+                    key={b.id}
+                    className={`absolute rounded-full ${b.color} border-2 border-white/50 flex items-center justify-center text-white font-bold shadow-lg`}
+                    style={{
+                        left: b.x,
+                        top: b.y,
+                        width: bubbleSize,
+                        height: bubbleSize,
+                        fontSize: `${bubbleSize * 0.5}px`,
+                    }}
+                >
+                    {b.letter}
+                </div>
+            ))}
+
+            {!isPlaying && !gameOver && (
+                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20 animate-fade-in">
+                    <h1 className="text-5xl sm:text-7xl font-bold gradient-text mb-4 font-['Comfortaa',sans-serif]">
+                        Bubble Type
+                    </h1>
+                    <p className="text-white/80 text-lg sm:text-xl mb-8">Type the letters before the bubbles fall!</p>
+                    <Button
+                        onClick={startGame}
+                        className="bg-gradient-to-r from-primary to-accent hover:from-primary/80 hover:to-accent/80 text-lg px-8 py-4 sm:text-xl sm:px-10 sm:py-5 shadow-lg rounded-full transition-all duration-300 hover:shadow-xl"
                     >
-                        {/* ... rest of the JSX is unchanged ... */}
-                        {bubbles.map((b) => (
-                            <div
-                                key={b.id}
-                                className={`absolute rounded-full ${b.color} border-2 border-white/50 flex items-center justify-center text-white font-bold shadow-lg transition-transform duration-100 ease-in-out`}
-                                style={{
-                                    left: b.x,
-                                    top: b.y,
-                                    width: bubbleSize,
-                                    height: bubbleSize,
-                                    fontSize: `${bubbleSize * 0.5}px`,
-                                }}
-                            >
-                                {b.letter}
-                            </div>
-                        ))}
-                        {gameOver && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm animate-fade-in">
-                                <div className="text-center text-white p-4">
-                                    <h3 className="text-xl sm:text-2xl font-bold mb-2 font-['Comfortaa',sans-serif]">
-                                        Game Over!
-                                    </h3>
-                                    <p className="text-base sm:text-lg">Final Score: {score}</p>
-                                    <p className="text-base sm:text-lg">Level Reached: {level}</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    {/* ... rest of the JSX is unchanged ... */}
-                    <div className="flex justify-center gap-4 mt-6">
-                        <Button
-                            onClick={startGame}
-                            className="bg-gradient-to-r from-primary to-accent hover:from-primary/80 hover:to-accent/80 text-base px-6 py-3 sm:text-lg sm:px-8 shadow-lg rounded-full transition-all duration-300 hover:shadow-xl"
-                        >
-                            {!isPlaying || gameOver ? "🎮 Start Game" : "🔄 Restart"}
-                        </Button>
-                    </div>
-                    <div className="text-center text-xs sm:text-sm text-muted-foreground mt-6 space-y-1">
-                        <p>Type the letters on the bubbles to pop them before they reach the bottom!</p>
-                        <p>Speed increases as you level up. 🎈</p>
-                    </div>
-                </CardContent>
-            </Card>
+                        🎮 Start Game
+                    </Button>
+                </div>
+            )}
+
+            {gameOver && (
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center backdrop-blur-sm z-20 animate-fade-in">
+                    <h2 className="text-4xl sm:text-6xl font-bold text-white mb-2">Game Over!</h2>
+                    <p className="text-white/90 text-xl sm:text-2xl mb-2">Final Score: {score}</p>
+                    <p className="text-white/90 text-xl sm:text-2xl mb-8">Level Reached: {level}</p>
+                    <Button
+                        onClick={startGame}
+                        className="bg-gradient-to-r from-primary to-accent hover:from-primary/80 hover:to-accent/80 text-lg px-8 py-4 sm:text-xl sm:px-10 sm:py-5 shadow-lg rounded-full transition-all duration-300 hover:shadow-xl"
+                    >
+                        🔄 Play Again
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };
