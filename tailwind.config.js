@@ -4,12 +4,11 @@ const plugin = require("tailwindcss-animate");
 module.exports = {
   darkMode: ["class"],
   content: [
-  "./pages/**/*.{js,ts,jsx,tsx}",
-  "./components/**/*.{js,ts,jsx,tsx}",
-  "./app/**/*.{js,ts,jsx,tsx}",
-  "./src/**/*.{js,ts,jsx,tsx}", // most important for your PlayVerse
-],
-
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -71,6 +70,7 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        // --- Existing Keyframes ---
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -79,10 +79,41 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // --- NEW Keyframes for Snake Game ---
+        'gradient-shift': {
+          '0%, 100%': { 'background-position': '0% 50%' },
+          '50%': { 'background-position': '100% 50%' },
+        },
+        'pulse-slow': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.05)', opacity: '0.9' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'pop-in': {
+          '0%': { transform: 'scale(0.8)', opacity: '0' },
+          '80%': { transform: 'scale(1.05)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        'bounce-in': {
+            '0%': { transform: 'scale(0.3)', opacity: '0' },
+            '50%': { transform: 'scale(1.05)', opacity: '1' },
+            '70%': { transform: 'scale(0.9)', opacity: '1' },
+            '100%': { transform: 'scale(1)', opacity: '1' },
+        }
       },
       animation: {
+        // --- Existing Animations ---
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        // --- NEW Animations for Snake Game ---
+        'gradient-shift': 'gradient-shift 4s ease infinite',
+        'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fade-in 0.5s ease-out forwards',
+        'pop-in': 'pop-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards',
+        'bounce-in': 'bounce-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
       },
     },
   },
