@@ -7,7 +7,6 @@ export const Bubbles = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [gameOver, setGameOver] = useState(false);
     const [score, setScore] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(60);
     const [bubbles, setBubbles] = useState([]);
     const [level, setLevel] = useState(1);
 
@@ -20,11 +19,11 @@ export const Bubbles = () => {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const colors = ["bg-red-400", "bg-blue-400", "bg-green-400", "bg-yellow-400", "bg-purple-400", "bg-pink-400"];
 
+    // Sound effects
     const playSound = (type) => {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-
         osc.connect(gain);
         gain.connect(ctx.destination);
 
@@ -41,8 +40,9 @@ export const Bubbles = () => {
         }
     };
 
+    // Create bubble
     const createBubble = () => {
-        const speed = 0.3 + level * 0.07; // Slight increase each level
+        const speed = 0.25 + level * 0.05; // faster fall
         return {
             id: bubbleIdRef.current++,
             letter: letters[Math.floor(Math.random() * letters.length)],
@@ -57,23 +57,20 @@ export const Bubbles = () => {
         setIsPlaying(true);
         setGameOver(false);
         setScore(0);
-        setTimeLeft(60);
         setLevel(1);
         setBubbles([]);
         bubbleIdRef.current = 0;
     };
 
-    const endGame = (reason) => {
+    const endGame = () => {
         setIsPlaying(false);
         setGameOver(true);
         cancelAnimationFrame(gameLoopRef.current);
         playSound("gameOver");
 
-        const message = reason === "time" ? "Time's up!" : "Too many bubbles reached the bottom!";
-
         toast({
             title: "Game Over!",
-            description: `${message} Final Score: ${score}`,
+            description: `A bubble reached the bottom! Final Score: ${score}`,
             variant: "destructive",
         });
     };
@@ -102,15 +99,18 @@ export const Bubbles = () => {
     const gameLoop = useCallback(() => {
         setBubbles((prevBubbles) => {
             const updated = prevBubbles.map((b) => ({...b, y: b.y + b.speed}));
-            const filtered = updated.filter((b) => b.y < GAME_HEIGHT);
 
-            if (updated.length - filtered.length > 3) {
-                endGame("overflow");
+            // End game if any bubble touches the bottom
+            if (updated.some((b) => b.y + BUBBLE_SIZE >= GAME_HEIGHT)) {
+                endGame();
                 return prevBubbles;
             }
 
-            // Controlled bubble spawn rate
-            if (Math.random() < 0.01 + level * 0.0015) {
+            const filtered = updated.filter((b) => b.y < GAME_HEIGHT);
+
+            // Dynamic spawn rate
+            const baseSpawnRate = 0.008 + level * 0.001; // slightly higher spawn rate
+            if (Math.random() < baseSpawnRate) {
                 filtered.push(createBubble());
             }
 
@@ -128,26 +128,9 @@ export const Bubbles = () => {
     }, [isPlaying, gameOver, gameLoop]);
 
     useEffect(() => {
-        if (isPlaying && !gameOver) {
-            const timer = setInterval(() => {
-                setTimeLeft((t) => {
-                    if (t <= 1) {
-                        endGame("time");
-                        return 0;
-                    }
-                    return t - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [isPlaying, gameOver]);
-
-    useEffect(() => {
         if (score > 0 && score % 100 === 0) {
             const newLevel = level + 1;
             setLevel(newLevel);
-
-            // Defer toast so it's outside of render
             setTimeout(() => {
                 toast({
                     title: "Level Up!",
@@ -171,7 +154,6 @@ export const Bubbles = () => {
                     </CardTitle>
                     <div className="flex justify-between items-center text-lg">
                         <p className="font-semibold text-primary">Score: {score}</p>
-                        <p className="font-semibold text-accent">Time: {timeLeft}s</p>
                         <p className="font-semibold text-secondary-foreground">Level: {level}</p>
                     </div>
                 </CardHeader>
@@ -220,7 +202,7 @@ export const Bubbles = () => {
 
                     <div className="text-center text-sm text-muted-foreground mt-6 space-y-1">
                         <p>Type the letters on the bubbles to pop them before they reach the bottom!</p>
-                        <p>Speed increases gradually with each level. Start easy! 🎈</p>
+                        <p>Speed increases gradually with each level. 🎈</p>
                         <p className="text-green-500">+10 points per bubble popped</p>
                     </div>
                 </CardContent>

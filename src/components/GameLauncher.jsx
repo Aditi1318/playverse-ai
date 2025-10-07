@@ -40,7 +40,7 @@ export const GameLauncher = ({gameId, onBack}) => {
                 <Button
                     onClick={onBack}
                     variant="outline"
-                    className="mb-4 bg-card/50 backdrop-blur-sm border-border/50 hover:bg-card/80"
+                    className="mb-4 bg-card/50 backdrop-blur-sm border-border/50 text-foreground hover:bg-card/80 hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Dashboard
