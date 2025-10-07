@@ -17,8 +17,10 @@ export const FlappyBird = () => {
     const BIRD_SIZE = 20;
     const PIPE_WIDTH = 60;
     const PIPE_GAP = 150;
-    const GRAVITY = 0.4;
-    const JUMP_FORCE = -10;
+    // --- MODIFIED VALUES FOR SMOOTHER MOVEMENT ---
+    const GRAVITY = 0.2;
+    const JUMP_FORCE = -6;
+    // --- END OF MODIFICATIONS ---
     const PIPE_SPEED = 2;
     const GAME_HEIGHT = 400;
     const GAME_WIDTH = 600;
